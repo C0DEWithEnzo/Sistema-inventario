@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}Productos{% endblock %}
+
+{# Cabecera de columna ordenable: conserva búsqueda y filtro #}
+{% macro th(col, label, cls='') %}
+    {% set activa = orden == col %}
+    {% set siguiente = ('desc' if direccion == 'asc' else 'asc') if activa else 'asc' %}
+    <th class="{{ cls }}">
+        <a class="sort-link {{ 'is-active' if activa }}"
+           href="{{ url_for('index', q=q or None, estado=estado if estado != 'todos' else None, orden=col, dir=siguiente) }}">
+            {{ label }}
+            <i data-lucide="{{ ('arrow-up' if direccion == 'asc' else 'arrow-down') if activa else 'chevrons-up-down' }}"></i>
+        </a>
+    </th>
+{% endmacro %}
+
+{% macro chip(valor, etiqueta, cantidad) %}
+    <a class="chip {{ 'is-active' if estado == valor }}"
+       href="{{ url_for('index', q=q or None, estado=valor if valor != 'todos' else None, orden=orden if orden != 'id' else None, dir=direccion if (orden != 'id' or direccion != 'desc') else None) }}">
+        {{ etiqueta }} <span class="chip-count">{{ cantidad }}</span>
+    </a>
+{% endmacro %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Productos</h1>
+        <p class="page-subtitle">Gestiona el inventario de tu negocio</p>
+    </div>
+    <a href="{{ url_for('agregar') }}" class="btn btn-primary">
+        <i data-lucide="plus"></i> Nuevo producto
+    </a>
+</div>
+
+{# ---------- MÉTRICAS ---------- #}
+<section class="stats-grid" aria-label="Resumen del inventario">
+    <div class="stat-card stat-card-featured">
+        <div class="stat-icon stat-icon-blue"><i data-lucide="wallet"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Valor del inventario</span>
+            <span class="stat-value stat-value-xl">${{ "{:,.2f}".format(stats.valor) }}</span>
+            <span class="stat-hint">{{ "{:,}".format(stats.unidades) }} unidades en total</span>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon stat-icon-slate"><i data-lucide="boxes"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Productos</span>
+            <span class="stat-value">{{ stats.total }}</span>
+            <span class="stat-hint">{{ stats.disponibles }} con stock suficiente</span>
+        </div>
+    </div>
+    <div class="stat-card {{ 'stat-card-alert' if stats.bajos }}">
+        <div class="stat-icon stat-icon-amber"><i data-lucide="alert-triangle"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Stock bajo</span>
+            <span class="stat-value">{{ stats.bajos }}</span>
+            <span class="stat-hint">Menos de {{ stock_bajo }} unidades</span>
+        </div>
+    </div>
+    <div class="stat-card {{ 'stat-card-alert-danger' if stats.agotados }}">
+        <div class="stat-icon stat-icon-red"><i data-lucide="package-x"></i></div>
+        <div class="stat-info">
+            <span class="stat-label">Agotados</span>
+            <span class="stat-value">{{ stats.agotados }}</span>
+            <span class="stat-hint">Sin unidades disponibles</span>
+        </div>
+    </div>
+</section>
+
+{# ---------- LISTADO ---------- #}
+<section class="card">
+    <div class="toolbar">
+        <form class="search-form" method="get" action="{{ url_for('index') }}" role="search">
+            <i data-lucide="search" class="search-icon"></i>
+            <input class="search-input" type="search" name="q" value="{{ q }}"
+                   placeholder="Buscar por nombre o descripción…" aria-label="Buscar productos">
+            {% if estado != 'todos' %}<input type="hidden" name="estado" value="{{ estado }}">{% endif %}
+            {% if orden != 'id' or direccion != 'desc' %}
+            <input type="hidden" name="orden" value="{{ orden }}">
+            <input type="hidden" name="dir" value="{{ direccion }}">
+            {% endif %}
+            {% if q %}
+            <a class="search-clear" href="{{ url_for('index', estado=estado if estado != 'todos' else None) }}"
+               title="Limpiar búsqueda"><i data-lucide="x"></i></a>
+            {% endif %}
+        </form>
+
+        <div class="chips" role="group" aria-label="Filtrar por estado de stock">
+            {{ chip('todos', 'Todos', stats.total) }}
+            {{ chip('disponible', 'Disponibles', stats.disponibles) }}
+            {{ chip('bajo', 'Stock bajo', stats.bajos) }}
+            {{ chip('agotado', 'Agotados', stats.agotados) }}
+        </div>
+    </div>
+
+    {% if productos %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    {{ th('id', 'ID', 'col-id') }}
+                    {{ th('nombre', 'Producto') }}
+                    {{ th('precio', 'Precio', 'col-num') }}
+                    {{ th('cantidad', 'Stock') }}
+                    {{ th('valor', 'Valor en stock', 'col-num col-valor') }}
+                    <th class="text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for producto in productos %}
+                <tr>
+                    <td class="col-id"><span class="badge badge-id">#{{ producto.id }}</span></td>
+                    <td>
+                        <div class="product-cell">
+                            <div class="product-avatar">{{ producto.nombre[0]|upper }}</div>
+                            <div class="product-text">
+                                <span class="product-name">{{ producto.nombre }}</span>
+                                <span class="product-desc" title="{{ producto.descripcion or '' }}">
+                                    {{ producto.descripcion or 'Sin descripción' }}
+                                </span>
+                            </div>
+                        </div>
+                    </td>
+                    <td class="col-num text-price">${{ "{:,.2f}".format(producto.precio) }}</td>
+                    <td>
+                        {% if producto.cantidad == 0 %}
+                        <span class="badge badge-danger"><i data-lucide="package-x"></i> Agotado</span>
+                        {% elif producto.cantidad < stock_bajo %}
+                        <span class="badge badge-warning"><i data-lucide="alert-circle"></i> {{ producto.cantidad }} · Bajo</span>
+                        {% else %}
+                        <span class="badge badge-success"><i data-lucide="check"></i> {{ producto.cantidad }}</span>
+                        {% endif %}
+                    </td>
+                    <td class="col-num col-valor text-muted-strong">${{ "{:,.2f}".format(producto.precio * producto.cantidad) }}</td>
+                    <td class="text-right">
+                        <div class="action-buttons">
+                            <a href="{{ url_for('editar', id=producto.id) }}" class="btn-icon btn-edit"
+                               title="Editar" aria-label="Editar {{ producto.nombre }}">
+                                <i data-lucide="pencil"></i>
+                            </a>
+                            <button type="button" class="btn-icon btn-delete" title="Eliminar"
+                                    aria-label="Eliminar {{ producto.nombre }}"
+                                    data-delete-url="{{ url_for('eliminar', id=producto.id) }}"
+                                    data-delete-name="{{ producto.nombre }}">
+                                <i data-lucide="trash-2"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    <div class="table-footer">
+        Mostrando <strong>{{ productos|length }}</strong> de <strong>{{ stats.total }}</strong> productos
+    </div>
+
+    {% elif stats.total == 0 %}
+    <div class="empty-state">
+        <div class="empty-icon"><i data-lucide="inbox"></i></div>
+        <h3>No hay productos todavía</h3>
+        <p>Comienza agregando tu primer producto al inventario.</p>
+        <a href="{{ url_for('agregar') }}" class="btn btn-primary"><i data-lucide="plus"></i> Crear producto</a>
+    </div>
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon"><i data-lucide="search-x"></i></div>
+        <h3>Sin resultados</h3>
+        <p>Ningún producto coincide con tu búsqueda o filtro actual.</p>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary"><i data-lucide="rotate-ccw"></i> Limpiar filtros</a>
+    </div>
+    {% endif %}
+</section>
+
+{# ---------- MODAL DE CONFIRMACIÓN ---------- #}
+<dialog id="confirm-dialog" class="dialog" aria-labelledby="dialog-title">
+    <form method="post" id="delete-form">
+        <div class="dialog-icon"><i data-lucide="trash-2"></i></div>
+        <h2 id="dialog-title" class="dialog-title">¿Eliminar producto?</h2>
+        <p class="dialog-text">
+            Vas a eliminar <strong id="dialog-name"></strong>. Esta acción no se puede deshacer.
+        </p>
+        <div class="dialog-actions">
+            <button type="button" class="btn btn-secondary" id="dialog-cancel">Cancelar</button>
+            <button type="submit" class="btn btn-danger"><i data-lucide="trash-2"></i> Eliminar</button>
+        </div>
+    </form>
+</dialog>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    (function () {
+        var dialog = document.getElementById('confirm-dialog');
+        var form = document.getElementById('delete-form');
+        var nombre = document.getElementById('dialog-name');
+
+        document.querySelectorAll('[data-delete-url]').forEach(function (btn) {
+            btn.addEventListener('click', function () {
+                form.action = btn.dataset.deleteUrl;
+                nombre.textContent = '«' + btn.dataset.deleteName + '»';
+                dialog.showModal();
+            });
+        });
+        document.getElementById('dialog-cancel').addEventListener('click', function () { dialog.close(); });
+        // Cerrar al hacer clic fuera del cuadro
+        dialog.addEventListener('click', function (e) { if (e.target === dialog) dialog.close(); });
+    })();
+</script>
+{% endblock %}

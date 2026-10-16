@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Editar producto{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Ruta">
+    <a href="{{ url_for('index') }}">Productos</a>
+    <i data-lucide="chevron-right"></i>
+    <span>Editar #{{ producto.id }}</span>
+</nav>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Editar producto</h1>
+        <p class="page-subtitle">
+            Modificando la información del producto <span class="badge badge-id">#{{ producto.id }}</span>
+        </p>
+    </div>
+</div>
+
+{% set icono_submit = 'refresh-cw' %}
+{% set texto_submit = 'Actualizar producto' %}
+{% include "_form.html" %}
+{% endblock %}

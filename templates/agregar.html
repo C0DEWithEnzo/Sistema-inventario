@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}Nuevo producto{% endblock %}
+
+{% block content %}
+<nav class="breadcrumb" aria-label="Ruta">
+    <a href="{{ url_for('index') }}">Productos</a>
+    <i data-lucide="chevron-right"></i>
+    <span>Nuevo</span>
+</nav>
+
+<div class="page-header">
+    <div>
+        <h1 class="page-title">Nuevo producto</h1>
+        <p class="page-subtitle">Ingresa la información detallada del artículo</p>
+    </div>
+</div>
+
+{% set icono_submit = 'save' %}
+{% set texto_submit = 'Guardar producto' %}
+{% include "_form.html" %}
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Error {{ codigo }}{% endblock %}
+
+{% block content %}
+<div class="card">
+    <div class="empty-state">
+        <div class="empty-icon"><i data-lucide="{{ 'file-question' if codigo == 404 else 'database-zap' }}"></i></div>
+        <p class="error-code">Error {{ codigo }}</p>
+        <h3>{{ titulo }}</h3>
+        <p>{{ mensaje }}</p>
+        <a href="{{ url_for('index') }}" class="btn btn-primary"><i data-lucide="arrow-left"></i> Volver a productos</a>
+    </div>
+</div>
+{% endblock %}
