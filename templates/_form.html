@@ -1,30 +1,42 @@
-{# Formulario compartido por agregar.html y editar.html #}
-<div class="form-layout">
+{# Componente compartido para agregar y editar productos #}
+<div class="form-layout" id="form-layout-container" data-stock-bajo="{{ stock_bajo|default(5) }}">
     <div class="form-container">
-        <form method="post" novalidate>
-            <div class="form-section-title">Información general</div>
+        <form method="POST" novalidate>
+            <div class="form-section-title">Información General</div>
 
             <div class="form-group">
                 <label class="form-label" for="nombre">Nombre del producto <span class="req">*</span></label>
                 <input class="form-control" type="text" id="nombre" name="nombre" maxlength="150"
-                       value="{{ producto.nombre }}" placeholder="Ej: Teclado Mecánico RGB" required autofocus>
+                       value="{{ producto.nombre or '' }}" placeholder="Ej: Teclado Mecánico RGB" required autofocus>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="categoria_id">Categoría</label>
+                <select class="form-control" id="categoria_id" name="categoria_id">
+                    <option value="">-- Sin categoría --</option>
+                    {% for cat in categorias %}
+                    <option value="{{ cat.id }}" {% if producto.categoria_id == cat.id %}selected{% endif %}>
+                        {{ cat.nombre }}
+                    </option>
+                    {% endfor %}
+                </select>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="descripcion">Descripción</label>
                 <textarea class="form-control" id="descripcion" name="descripcion"
-                          placeholder="Breve descripción de las especificaciones del producto...">{{ producto.descripcion or '' }}</textarea>
+                          placeholder="Especificaciones del producto...">{{ producto.descripcion or '' }}</textarea>
             </div>
 
-            <div class="form-section-title">Precio y existencias</div>
+            <div class="form-section-title">Precio y Stock</div>
 
             <div class="form-row">
                 <div class="form-group">
-                    <label class="form-label" for="precio">Precio unitario <span class="req">*</span></label>
+                    <label class="form-label" for="precio">Precio unitario ($) <span class="req">*</span></label>
                     <div class="input-affix">
                         <span class="affix">$</span>
                         <input class="form-control" type="number" step="0.01" min="0" id="precio" name="precio"
-                               value="{{ producto.precio }}" placeholder="0.00" required>
+                               value="{{ producto.precio or '' }}" placeholder="0.00" required>
                     </div>
                 </div>
                 <div class="form-group">
@@ -32,7 +44,7 @@
                     <div class="input-affix">
                         <span class="affix"><i data-lucide="boxes"></i></span>
                         <input class="form-control" type="number" step="1" min="0" id="cantidad" name="cantidad"
-                               value="{{ producto.cantidad }}" placeholder="0" required>
+                               value="{{ producto.cantidad if producto.cantidad is not none else '' }}" placeholder="0" required>
                     </div>
                 </div>
             </div>
@@ -46,9 +58,9 @@
         </form>
     </div>
 
-    {# Panel lateral con vista previa en vivo #}
+    <!-- Panel Lateral con Vista Previa Dinámica -->
     <aside class="preview-card" aria-label="Vista previa">
-        <div class="preview-title">Vista previa</div>
+        <div class="preview-title">Vista previa del producto</div>
         <div class="product-cell">
             <div class="product-avatar" id="pv-avatar">?</div>
             <div class="product-text">
@@ -57,26 +69,45 @@
             </div>
         </div>
         <dl class="preview-list">
-            <div><dt>Precio</dt><dd id="pv-precio">$0.00</dd></div>
-            <div><dt>Stock</dt><dd id="pv-estado"></dd></div>
-            <div class="preview-total"><dt>Valor en stock</dt><dd id="pv-valor">$0.00</dd></div>
+            <div>
+                <dt>Precio</dt>
+                <dd id="pv-precio">$0.00</dd>
+            </div>
+            <div>
+                <dt>Stock</dt>
+                <dd id="pv-estado"></dd>
+            </div>
+            <div class="preview-total">
+                <dt>Valor en stock</dt>
+                <dd id="pv-valor">$0.00</dd>
+            </div>
         </dl>
     </aside>
 </div>
 
 <script>
-    (function () {
-        var STOCK_BAJO = {{ stock_bajo }};
-        var $ = function (id) { return document.getElementById(id); };
-        var fmt = function (n) {
+    document.addEventListener('DOMContentLoaded', function () {
+        var container = document.getElementById('form-layout-container');
+        var STOCK_BAJO = container ? parseInt(container.getAttribute('data-stock-bajo'), 10) || 5 : 5;
+        
+        function $(id) { 
+            return document.getElementById(id); 
+        }
+
+        function fmt(n) {
             return '$' + n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-        };
+        }
 
         function actualizar() {
-            var nombre = $('nombre').value.trim();
-            var desc = $('descripcion').value.trim();
-            var precio = parseFloat($('precio').value) || 0;
-            var cant = parseInt($('cantidad').value, 10) || 0;
+            var nombreEl = $('nombre');
+            var descEl = $('descripcion');
+            var precioEl = $('precio');
+            var cantEl = $('cantidad');
+
+            var nombre = nombreEl ? nombreEl.value.trim() : '';
+            var desc = descEl ? descEl.value.trim() : '';
+            var precio = precioEl ? (parseFloat(precioEl.value) || 0) : 0;
+            var cant = cantEl ? (parseInt(cantEl.value, 10) || 0) : 0;
 
             $('pv-avatar').textContent = nombre ? nombre[0].toUpperCase() : '?';
             $('pv-nombre').textContent = nombre || 'Nombre del producto';
@@ -88,15 +119,20 @@
             if (cant === 0) {
                 estado.innerHTML = '<span class="badge badge-danger">Agotado</span>';
             } else if (cant < STOCK_BAJO) {
-                estado.innerHTML = '<span class="badge badge-warning">' + cant + ' · Bajo</span>';
+                estado.innerHTML = '<span class="badge badge-warning">' + cant + ' · Stock bajo</span>';
             } else {
-                estado.innerHTML = '<span class="badge badge-success">' + cant + '</span>';
+                estado.innerHTML = '<span class="badge badge-success">' + cant + ' unidades</span>';
             }
         }
 
-        ['nombre', 'descripcion', 'precio', 'cantidad'].forEach(function (id) {
-            $(id).addEventListener('input', actualizar);
-        });
+        var campos = ['nombre', 'descripcion', 'precio', 'cantidad'];
+        for (var i = 0; i < campos.length; i++) {
+            var el = $(campos[i]);
+            if (el) {
+                el.addEventListener('input', actualizar);
+            }
+        }
+
         actualizar();
-    })();
+    });
 </script>

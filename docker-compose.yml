@@ -1,0 +1,35 @@
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: inventario_db
+    restart: always
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: inventario_db
+      MYSQL_USER: inventario_user
+      MYSQL_PASSWORD: proyectfs08!
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./schema.sql:/docker-entrypoint-initdb.d/schema.sql
+
+  web:
+    build: .
+    container_name: inventario_web
+    restart: always
+    ports:
+      - "5000:5000"
+    environment:
+      - DB_HOST=db
+      - DB_USER=inventario_user
+      - DB_PASSWORD=proyectfs08!
+      - DB_NAME=inventario_db
+      - SECRET_KEY=super-secreto-key
+    depends_on:
+      - db
+
+volumes:
+  mysql_data:
