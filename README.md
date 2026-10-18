@@ -29,12 +29,12 @@ Una aplicación web **Full-Stack** diseñada para gestionar el inventario de un 
    Sigue estos pasos para ejecutar el proyecto en tu máquina local.
 
 1. Clonar el repositorio
-
+```text
    git clone https://github.com/C0DEWithEnzo/Sistema-inventario.git
    cd Sistema-inventario
-
+```
 2. Configurar el entorno virtual
-
+```text
    * Crear el entorno virtual
    python3 -m venv venv
 
@@ -43,15 +43,15 @@ Una aplicación web **Full-Stack** diseñada para gestionar el inventario de un 
    source venv/bin/activate
      En Windows:
    venv\Scripts\activate
-
+```
 3. Instalar dependencias
-
+```text
    pip install Flask mysql-connector-python
-
+```
 4. Configurar la Base de Datos (MySQL)
 
    Abre tu cliente de MySQL (o la terminal) y ejecuta:
-
+```text
    CREATE DATABASE inventario_db;
     USE inventario_db;
 
@@ -68,11 +68,11 @@ Una aplicación web **Full-Stack** diseñada para gestionar el inventario de un 
     CREATE USER 'inventario_user'@'localhost' IDENTIFIED BY 'TuContraseñaSegura123';
     GRANT ALL PRIVILEGES ON inventario_db.* TO 'inventario_user'@'localhost';
     FLUSH PRIVILEGES;
-
+```
 5. Configurar las credenciales
 
     Abre el archivo db.py y actualiza las credenciales con los datos que creaste:
-
+```text
     import mysql.connector
 
     def get_connection():
@@ -82,11 +82,11 @@ Una aplicación web **Full-Stack** diseñada para gestionar el inventario de un 
           password="TuContraseñaSegura123", # <-- CAMBIAR AQUÍ
           database="inventario_db"
       )
-
+```
 6. Ejecutar la aplicación
-
+```text
    python app.py
-
+```
 ## 📂 Estructura del Proyecto
 
 ```text
@@ -105,3 +105,9 @@ Sistema-Inventario/
 │
 └── static/              # Archivos estáticos
     └── style.css        # Hoja de estilos principal
+```
+# 👨‍💻 Autor
+
+Enzo Valentino Elias
+
+GitHub: @C0DEWithEnzo
